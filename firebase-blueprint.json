@@ -1,0 +1,95 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile metadata",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "fullName": { "type": "string" },
+        "username": { "type": "string" },
+        "email": { "type": "string" },
+        "mobile": { "type": "string" },
+        "profilePhoto": { "type": "string" },
+        "role": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Product document",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "caption": { "type": "string" },
+        "benefits": { "type": "string" },
+        "image": { "type": "string" },
+        "images": { "type": "array" },
+        "category": { "type": "string" },
+        "unit": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["name", "price"]
+    },
+    "Banner": {
+      "title": "Banner",
+      "description": "Promo banner slide for homepage",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "image": { "type": "string" },
+        "enabled": { "type": "boolean" },
+        "displayOrder": { "type": "number" }
+      },
+      "required": ["title"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer order document with timeline and invoice details",
+      "type": "object",
+      "properties": {
+        "orderNumber": { "type": "string" },
+        "invoiceNumber": { "type": "string" },
+        "status": { "type": "string" },
+        "timeline": { "type": "array" }
+      },
+      "required": ["orderNumber", "status"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "System and order status change notification",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string" },
+        "read": { "type": "boolean" }
+      },
+      "required": ["title", "message"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile collection"
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Products collection"
+    },
+    "/banners/{bannerId}": {
+      "schema": "Banner",
+      "description": "Homepage promo banners collection"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Customer orders and invoices collection"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "Notifications collection"
+    }
+  }
+}

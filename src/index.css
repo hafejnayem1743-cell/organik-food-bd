@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+*, ::before, ::after {
+  box-sizing: border-box;
+}
+
+@layer utilities {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 10px 30px -10px rgba(255, 92, 138, 0.12), 0 4px 12px -2px rgba(0, 0, 0, 0.03);
+  }
+
+  .glass-card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-card-hover:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 40px -12px rgba(255, 92, 138, 0.22), 0 8px 16px -4px rgba(0, 0, 0, 0.05);
+    border-color: rgba(255, 92, 138, 0.3);
+  }
+
+  .glass-nav {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 220, 230, 0.6);
+  }
+
+  .btn-pink {
+    background: linear-gradient(135deg, #FF5C8A 0%, #E04371 100%);
+    color: white;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 6px 18px -4px rgba(255, 92, 138, 0.4);
+  }
+
+  .btn-pink:hover {
+    background: linear-gradient(135deg, #FF4275 0%, #D03060 100%);
+    transform: scale(1.03);
+    box-shadow: 0 10px 24px -4px rgba(255, 92, 138, 0.55);
+  }
+
+  .btn-pink-outline {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1.5px solid #FF5C8A;
+    color: #FF5C8A;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .btn-pink-outline:hover {
+    background: #FF5C8A;
+    color: white;
+    transform: scale(1.02);
+    box-shadow: 0 6px 18px -4px rgba(255, 92, 138, 0.35);
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-15px) rotate(3deg); }
+}
+
+@keyframes floatReverse {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(18px) rotate(-4deg); }
+}
+
+.animate-float-1 {
+  animation: floatSlow 8s ease-in-out infinite;
+}
+
+.animate-float-2 {
+  animation: floatReverse 11s ease-in-out infinite;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #FFF0F5;
+}
+::-webkit-scrollbar-thumb {
+  background: #FFB3C6;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #FF5C8A;
+}
+

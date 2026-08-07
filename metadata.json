@@ -1,0 +1,6 @@
+{
+  "name": "Organik Food BD",
+  "description": "Mobile-first full stack organic eCommerce store for Organik Food BD with Manager Md Sohel Rana and Admin BD NAYEM BOSS based in Mirpur, Kushtia.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
