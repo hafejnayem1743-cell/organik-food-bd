@@ -16,13 +16,12 @@ export const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
 
-// Use Firestore with long-polling enabled. This is more reliable on some
-// mobile/ISP/proxy networks where the normal WebChannel connection can fail.
+// Prefer a transport that works reliably on restrictive networks. If Firestore
+// was already initialized by another module, reuse the existing instance.
 let firestore;
 try {
   firestore = initializeFirestore(app, { experimentalForceLongPolling: true });
 } catch {
-  // If Firestore was already initialized (for example by a hot reload), reuse it.
   firestore = getFirestore(app);
 }
 export const db = firestore;

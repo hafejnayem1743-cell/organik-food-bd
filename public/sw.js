@@ -1,4 +1,4 @@
-const CACHE_NAME = 'organik-food-bd-v2';
+const CACHE_NAME = 'organik-food-bd-v1';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -50,35 +50,23 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first for the HTML/JS app so a stale service-worker cache cannot
-  // keep an old build that points to an empty local API database.
-  const isAppCode = url.pathname === '/' ||
-    url.pathname.endsWith('.html') ||
-    url.pathname.endsWith('.js') ||
-    url.pathname.endsWith('.css') ||
-    url.pathname.endsWith('.json');
-
-  if (isAppCode) {
-    event.respondWith(
-      fetch(event.request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
-        }
-        return networkResponse;
-      }).catch(() => caches.match(event.request).then((cached) => cached || caches.match('/index.html')))
-    );
-    return;
-  }
-
+  // Cache-first / stale-while-revalidate for static app assets
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse.clone()));
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
         }
         return networkResponse;
-      }).catch(() => cachedResponse);
+      }).catch(() => {
+        if (event.request.mode === 'navigate') {
+          return caches.match('/index.html');
+        }
+      });
+
       return cachedResponse || fetchPromise;
     })
   );
