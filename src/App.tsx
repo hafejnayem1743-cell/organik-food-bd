@@ -18,7 +18,7 @@ import { Product, Category, CartItem, User, Order, Notification, Banner } from '
 import { useLanguage } from './lib/i18n';
 import { auth, db } from './lib/firebase';
 import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
-import { collection, doc, getDoc, setDoc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { 
   Sparkles, 
   ShieldCheck, 
@@ -32,6 +32,34 @@ import {
   Heart,
   LogOut
 } from 'lucide-react';
+
+const mapFirestoreProduct = (docSnap: any): Product => {
+  const d = docSnap.data ? docSnap.data() : docSnap;
+  const id = docSnap.id || d.id || '';
+  const rawImages = Array.isArray(d.images) ? d.images.filter(Boolean) : [];
+  const mainImg = d.image || rawImages[0] || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=800';
+
+  return {
+    id,
+    name: String(d.name || ''),
+    bnName: d.bnName || d.name || '',
+    caption: d.caption || d.shortDescription || d.name || '',
+    shortDescription: d.shortDescription || d.caption || d.name || '',
+    benefits: d.benefits || d.fullDescription || '',
+    fullDescription: d.fullDescription || d.benefits || '',
+    price: Number(d.price) || 0,
+    discountPrice: d.discountPrice !== undefined && d.discountPrice !== null && d.discountPrice !== '' ? Number(d.discountPrice) : undefined,
+    category: d.category || 'General',
+    stock: d.stock !== undefined && d.stock !== null && d.stock !== '' ? Number(d.stock) : 50,
+    unit: d.unit || 'Kg',
+    image: mainImg,
+    images: rawImages.length ? rawImages : [mainImg],
+    rating: Number(d.rating) || 5,
+    reviewCount: Number(d.reviewCount) || 10,
+    status: d.status === 'disabled' ? 'disabled' : 'active',
+    createdAt: d.createdAt || new Date().toISOString()
+  };
+};
 
 export const normalizeCategory = (cat?: string): string => {
   if (!cat) return 'General';
@@ -265,71 +293,43 @@ export default function App() {
       }
     });
 
-    // 2. Real-time Firestore products listener with auto-seeding
-    const unsubscribeProducts = onSnapshot(collection(db, 'products'), async (snapshot) => {
-      if (snapshot.empty) {
-        // Seed default products to Firestore if collection is empty
-        try {
-          const res = await fetch('/api/products');
-          if (res.ok) {
-            const initialProds: Product[] = await res.json();
-            for (const p of initialProds) {
-              const mainImg = p.image || (p.images && p.images[0]) || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=800';
-              const pDoc = {
-                image: mainImg,
-                name: p.name,
-                bnName: p.bnName || p.name,
-                price: Number(p.price),
-                discountPrice: p.discountPrice ? Number(p.discountPrice) : undefined,
-                caption: p.caption || p.shortDescription || p.name,
-                shortDescription: p.shortDescription || p.caption || p.name,
-                benefits: p.benefits || p.fullDescription || p.shortDescription || p.name,
-                fullDescription: p.fullDescription || p.benefits || p.shortDescription || p.name,
-                category: p.category || 'General',
-                stock: Number(p.stock) || 50,
-                unit: p.unit || 'Kg',
-                images: p.images || [mainImg],
-                rating: p.rating || 5,
-                reviewCount: p.reviewCount || 10,
-                status: p.status || 'active',
-                createdAt: p.createdAt || new Date().toISOString()
-              };
-              await setDoc(doc(db, 'products', p.id), pDoc, { merge: true });
-            }
-          }
-        } catch (seedErr) {
-          console.warn("Firestore product seeding warning:", seedErr);
-        }
-      } else {
-        const fsProducts: Product[] = snapshot.docs.map(docSnap => {
-          const d = docSnap.data();
-          const mainImg = d.image || (d.images && d.images[0]) || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=800';
-          return {
-            id: docSnap.id,
-            name: d.name || '',
-            bnName: d.bnName || d.name || '',
-            caption: d.caption || d.shortDescription || d.name || '',
-            shortDescription: d.caption || d.shortDescription || d.name || '',
-            benefits: d.benefits || d.fullDescription || '',
-            fullDescription: d.benefits || d.fullDescription || '',
-            price: Number(d.price) || 0,
-            discountPrice: d.discountPrice ? Number(d.discountPrice) : undefined,
-            category: d.category || 'General',
-            stock: d.stock ? Number(d.stock) : 50,
-            unit: d.unit || 'Kg',
-            image: mainImg,
-            images: d.images && d.images.length > 0 ? d.images : [mainImg],
-            rating: d.rating || 5,
-            reviewCount: d.reviewCount || 10,
-            status: d.status || 'active',
-            createdAt: d.createdAt || new Date().toISOString()
-          } as Product;
-        });
+    // 2. Firestore products: Firebase is the source of truth.
+    // Load once immediately, then keep the UI synced in real time.
+    let productRetryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const loadProductsFromFirestore = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, 'products'));
+        const fsProducts = snapshot.docs.map(mapFirestoreProduct);
         setProducts(fsProducts);
+        console.info(`[Organik Food BD] Loaded ${fsProducts.length} products from Firestore.`);
+        return true;
+      } catch (error) {
+        console.error('[Organik Food BD] Firestore product read failed:', error);
+        return false;
       }
-    }, (error) => {
-      console.warn("Firestore products snapshot warning:", error);
-    });
+    };
+
+    // Do not depend on /api/products or data/db.json. Those files are local/server
+    // fallbacks and can be empty on Cloudflare Pages. Existing Firestore products
+    // must remain visible even when the API is unavailable.
+    void loadProductsFromFirestore();
+
+    const unsubscribeProducts = onSnapshot(
+      collection(db, 'products'),
+      (snapshot) => {
+        const fsProducts = snapshot.docs.map(mapFirestoreProduct);
+        setProducts(fsProducts);
+        console.info(`[Organik Food BD] Firestore realtime update: ${fsProducts.length} products.`);
+      },
+      (error) => {
+        console.error('[Organik Food BD] Firestore realtime listener failed:', error);
+        // Keep any products already loaded by getDocs and retry a normal read.
+        productRetryTimer = setTimeout(() => {
+          void loadProductsFromFirestore();
+        }, 2000);
+      }
+    );
 
     // 3. Realtime Firestore notifications listener
     const unsubscribeNotifications = onSnapshot(collection(db, 'notifications'), (snap) => {
@@ -385,6 +385,7 @@ export default function App() {
       unsubscribeProducts();
       unsubscribeNotifications();
       unsubscribeBanners();
+      if (productRetryTimer) clearTimeout(productRetryTimer);
     };
   }, []);
 

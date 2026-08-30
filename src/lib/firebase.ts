@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, initializeFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 export const firebaseConfig = {
@@ -15,5 +15,15 @@ export const firebaseConfig = {
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+
+// Use Firestore with long-polling enabled. This is more reliable on some
+// mobile/ISP/proxy networks where the normal WebChannel connection can fail.
+let firestore;
+try {
+  firestore = initializeFirestore(app, { experimentalForceLongPolling: true });
+} catch {
+  // If Firestore was already initialized (for example by a hot reload), reuse it.
+  firestore = getFirestore(app);
+}
+export const db = firestore;
 export const storage = getStorage(app);
